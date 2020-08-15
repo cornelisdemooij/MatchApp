@@ -12,8 +12,13 @@ class ViewController: UIViewController, UICollectionViewDataSource, UICollection
     
     @IBOutlet weak var collectionView: UICollectionView!
     
+    @IBOutlet weak var timerLabel: UILabel!
+    
     let model = CardModel()
     var cardsArray = [Card]()
+    
+    var timer:Timer?
+    var milliseconds:Int = 100 * 1000
     
     var firstFlippedCardIndex:IndexPath?
 
@@ -26,10 +31,32 @@ class ViewController: UIViewController, UICollectionViewDataSource, UICollection
         // Set the view controller as the datasource and delegate of the collection view
         collectionView.dataSource = self
         collectionView.delegate = self
+        
+        // Initialize the timer
+        timer = Timer.scheduledTimer(timeInterval: 0.001, target: self, selector: #selector(timerFired), userInfo: nil, repeats: true)
+        RunLoop.main.add(timer!, forMode: .common)
+    }
+    
+    // MARK: - Timer Methods
+    @objc func timerFired() {
+        // Decrement the counter
+        milliseconds -= 1
+        
+        // Update the label
+        let seconds:Double = Double(milliseconds)/1000.0
+        timerLabel.text = String(format: "Time Remaining: %.2f", seconds)
+        
+        // Stop the timer if it reaches zero
+        if milliseconds <= 0 {
+            timerLabel.textColor = UIColor.red
+            timer?.invalidate()
+            checkForGameEnd()
+        }
+        
+        // TODO: Check if the user has cleared all the pairs
     }
     
     // MARK: - Collection View Delegate Methods
-    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return cardsArray.count
     }
@@ -53,7 +80,6 @@ class ViewController: UIViewController, UICollectionViewDataSource, UICollection
         
         // Configure it
         cardCell?.configureCell(card: card)
-        
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
@@ -70,7 +96,6 @@ class ViewController: UIViewController, UICollectionViewDataSource, UICollection
                 firstFlippedCardIndex = indexPath
             } else {
                 // Second card that is flipped
-                
                 
                 // Run the comparison logic
                 checkForMatch(indexPath)
@@ -100,6 +125,9 @@ class ViewController: UIViewController, UICollectionViewDataSource, UICollection
             cardTwoCell?.remove()
             
             firstFlippedCardIndex = nil
+            
+            // Was that the last pair?
+            checkForGameEnd()
         } else {
             // It's not a match
             cardOne.isFlipped = false
@@ -112,6 +140,45 @@ class ViewController: UIViewController, UICollectionViewDataSource, UICollection
             firstFlippedCardIndex = nil
         }
     }
+    
+    func checkForGameEnd() {
+        // Check if there's any card that is not matched
+        var hasWon = true
+        for card in cardsArray {
+            if card.isMatched == false {
+                // We've found a card that is unmatched
+                hasWon = false
+                break
+            }
+        }
+        
+        if hasWon {
+            // User has won
+            
+            // Stop the timer
+            timer?.invalidate()
+            timerLabel.textColor = UIColor.systemGreen
+            
+            // Show an alert
+            showAlert(title: "Congratulations!", message: "You've won the game!")
+        } else {
+            // User hasn't won yet, check if there's any time left
+            if milliseconds <= 0 {
+                showAlert(title: "Time's up", message: "Sorry, better luck next time!")
+            }
+        }
+    }
 
+    func showAlert(title:String, message:String) {
+        // Create the alert
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        
+        // Add a button for the user to dismiss it
+        let okAction = UIAlertAction(title: "Ok", style: .default, handler: nil)
+        alert.addAction(okAction)
+        
+        // Show the alert
+        present(alert, animated: true, completion: nil)
+    }
 }
 
