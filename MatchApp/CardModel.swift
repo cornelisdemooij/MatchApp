@@ -17,12 +17,10 @@ class CardModel {
         var generatedCards = [Card]()
         
         // Randomly generate 8 pairs of cards
-        while generatedCards.count != 2*8 {
+        while generatedCards.count < 2*8 {
             // Generate a random number
             let randomNumber = Int.random(in: 1...13)
-            
-            print(randomNumber)
-            
+                        
             // Check that the random number doesn't exist yet
             if (!randomNumbers.contains(randomNumber)) {
                 // Add the new random number to the array
